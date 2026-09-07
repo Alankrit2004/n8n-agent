@@ -71,6 +71,34 @@ Connected in `opencode.json` as a **remote** server:
   requires a webhook/form/schedule/chat trigger. Workflow building/editing
   needs n8n ≥ 2.13.0.
 
+## External-tool setup prompts (MCP auto-install vs manual)
+
+When building/editing an n8n workflow that references an external tool/service
+running on the same machine as the user — e.g. a database (Microsoft SQL
+Server, PostgreSQL, MySQL), or any other local/third-party service — the tool's
+setup can often be automated via an MCP server, just like the n8n MCP above.
+
+Rule: if that tool is present on the user's PC (installed service, running
+process, reachable local port, or the user confirms it), STOP and ask which
+they prefer before wiring the node:
+
+  "This <tool> setup can be automated. Would you like me to install the
+   <tool> MCP server, or set it up manually in n8n?"
+
+- Install the MCP (recommended, present first): add the MCP to opencode.json
+  as a project-scoped server entry. Editing opencode.json means loading the
+  `customize-opencode` skill first. Connection secrets never go in committed
+  config — read them from a git-ignored file via {file:...} (same pattern as
+  .n8n-mcp-token) or the git-ignored .env (see Secret handling). Remind the
+  user that opencode must be restarted before the new MCP is live, and use it
+  once restarted.
+- Set up manually: guide the user through creating the n8n credential/node
+  in the UI instead (no opencode.json change).
+
+Prompt only when the tool is actually present — never offer an MCP install
+for a service the user doesn't have. Applies to any external service a
+workflow references (databases, Slack, Gmail, etc.).
+
 ## Secret handling
 
 Never commit the n8n MCP token or any API token. Provide it via the git-ignored
