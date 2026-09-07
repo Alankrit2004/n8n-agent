@@ -35,6 +35,13 @@ let the agent set everything up. There is no separate install step.
 
 That's it. You'll be talking to n8n through opencode from there.
 
+> **Keep one opencode session per workflow.** Session context (decisions, naming,
+> preferences) is where a workflow lives; starting a new session mid-workflow
+> forces you to re-explain. The agent also keeps a git-ignored
+> `.n8n-user-profile.md` at the repo root that it reads each session and appends
+> to at the end of each workflow, so it gradually adapts to how you work. That
+> file is local to you and never committed.
+
 > **Already have n8n running, or hitting trouble?** The full decision questions,
 > manual steps, troubleshooting, and token-file gotchas are in
 > [`setup.md`](setup.md).

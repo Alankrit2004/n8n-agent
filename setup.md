@@ -314,6 +314,30 @@ Invoke-WebRequest -Uri "http://localhost:5678/mcp-server/http" -Headers $h -UseB
 > returns **401**, the token in `.n8n-mcp-token` is missing/wrong/corrupt (BOM,
 > newline, quoting) or MCP isn't actually enabled on the n8n side.
 
+### Step 7 — You're set up
+
+After the verification in Step 6 passes, you're done. A few habits that keep
+things smooth:
+
+- **Keep one opencode session per workflow.** opencode sessions hold the
+  conversation context (decisions, naming, preferences); restarting mid-workflow
+  forces you to re-explain. If opencode restarts anyway, reopen the same session
+  rather than starting fresh where possible.
+- **The agent adapts to you over time.** opencode keeps a **git-ignored** local
+  file `.n8n-user-profile.md` at the repo root. The agent reads it at the start
+  of each session and appends a short log entry at the end of each workflow, so
+  it gradually learns how you like to work (e.g. your preferred database, how
+  you like workflows organized). It's never committed. If the file is missing,
+  create it (template below) or ask the agent to start one:
+
+  ```markdown
+  # n8n-agent - user profile (local, git-ignored)
+  ## Preferences
+  - <what the agent should assume about you>
+  ## Session log
+  - <date>: <workflow/task> — <preference observed>
+  ```
+
 ---
 
 ## Troubleshooting

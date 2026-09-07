@@ -101,6 +101,25 @@ Prompt only when the tool is actually present — never offer an MCP install
 for a service the user doesn't have. Applies to any external service a
 workflow references (databases, Slack, Gmail, etc.).
 
+## User profile & session continuity
+
+- **Reuse the same opencode session for a workflow.** A workflow's context
+  (decisions, naming, preferences) lives in the session; a fresh session loses
+  it and forces the user to re-explain. Prefer continuing the existing session
+  over starting over for related work on the same workflow.
+- **Learn the user over time** via the **git-ignored** local file
+  `.n8n-user-profile.md` at the repo root (never committed). It holds this
+  user's observed preferences plus a chronological session log.
+  - At the **start** of a session, read it and follow the preferences there.
+  - At the **end** of a workflow/task, append one short log line: date,
+    workflow/task, and the preference/behavior the user showed. Update the
+    *Preferences* section if an existing preference changed.
+  - Keep entries short and factual. Only record observable preferences (e.g.
+    "prefers SQL Server for DB tasks", "wants each workflow in its own
+    folder"); do **not** store secrets, tokens, or anything sensitive.
+  - If the file is missing (e.g. fresh clone), create it from the template in
+    this repo's setup.md or leave a short hand-written start.
+
 ## Secret handling
 
 Never commit the n8n MCP token or any API token. Provide it via the git-ignored

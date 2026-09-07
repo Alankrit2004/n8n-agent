@@ -11,3 +11,6 @@ node_modules/
 .env
 .env.local
 .n8n-mcp-token
+
+# Per-user local profile / session log (git-ignored)
+.n8n-user-profile.md
