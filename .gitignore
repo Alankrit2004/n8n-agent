@@ -1,0 +1,13 @@
+# OS
+Thumbs.db
+.DS_Store
+
+# Node / opencode cache
+node_modules/
+
+# n8n skills are vendored in-tree (n8n-skills/). Update via git -C n8n-skills pull.
+
+# Secrets / env
+.env
+.env.local
+.n8n-mcp-token

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": ["./n8n-skills/opencode/plugin.ts"],
+  "mcp": {
+    "n8n": {
+      "type": "remote",
+      "url": "http://localhost:5678/mcp-server/http",
+      "headers": { "Authorization": "Bearer {file:.n8n-mcp-token}" },
+      "oauth": false,
+      "enabled": true
+    }
+  }
+}

@@ -1,0 +1,25 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      # Persist the instance across container restarts
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:-please-change-me-to-a-long-random-string}
+      # User-facing public URL (used for webhooks / editor links)
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
+      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
+      # --- Instance-level MCP, managed via env (n8n >= 2.20) ---
+      # Enabling MCP via env locks the UI control until N8N_MCP_ACCESS_ENABLED
+      # is set; the access API key still has to be created once in the UI.
+      - N8N_MCP_MANAGED_BY_ENV=true
+      - N8N_MCP_ACCESS_ENABLED=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:
