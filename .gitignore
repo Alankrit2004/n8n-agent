@@ -5,7 +5,7 @@ Thumbs.db
 # Node / opencode cache
 node_modules/
 
-# n8n skills are vendored in-tree (n8n-skills/). Update via git -C n8n-skills pull.
+# n8n skills are vendored in-tree (n8n-skills/). Update via re-vendor from upstream.
 
 # Secrets / env
 .env

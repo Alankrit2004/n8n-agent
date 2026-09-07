@@ -5,19 +5,53 @@ automation instance. It loads n8n's official skills and connects to the n8n
 built-in MCP server, so a CLI coding agent can search, build, edit, and execute
 workflows directly.
 
+## Get started (first run)
+
+This repo is a **project**, not a stand-alone app: you open it in opencode and
+let the agent set everything up. There is no separate install step.
+
+1. **Clone the repo**, then launch opencode from inside it:
+
+   ```bash
+   git clone https://github.com/Alankrit2004/n8n-agent.git
+   cd n8n-agent
+   opencode
+   ```
+
+2. **Paste this prompt as your first message:**
+
+   > Read `setup.md` and set up this project, asking me the setup questions as you
+   > go.
+
+   The agent will:
+   - ask how n8n should be hosted (default: **Docker**) and where,
+   - copy `.env.example` → `.env` and start n8n,
+   - prompt you for the two one-time manual bits it can't do for you: creating
+     the MCP access token in the n8n UI, and toggling a workflow **Available in MCP**,
+   - write the token to the git-ignored `.n8n-mcp-token` file,
+   - and finish by verifying the skills, MCP connection, and hooks all work.
+
+3. **Restart opencode** once told to (config is read at startup).
+
+That's it. You'll be talking to n8n through opencode from there.
+
+> **Already have n8n running, or hitting trouble?** The full decision questions,
+> manual steps, troubleshooting, and token-file gotchas are in
+> [`setup.md`](setup.md).
+
 ## What's in here
 
 | Path | Purpose |
 | --- | --- |
 | `opencode.json` | Project config: loads the n8n-skills plugin + the `n8n` MCP server. |
-| `n8n-skills/` | Vendored clone of the official [`n8n-io/skills`](https://github.com/n8n-io/skills) repo (plugin + 13 capability skills + meta-skill). |
+| `n8n-skills/` | Vendored in-tree copy of the official [`n8n-io/skills`](https://github.com/n8n-io/skills) repo (plugin + 13 capability skills + meta-skill). |
 | `docker-compose.yml` | Runs n8n in Docker with **MCP access enabled** via env vars. |
 | `setup.md` | **Portable one-shot runbook** — read this to stand this project up on a fresh machine. |
 | `AGENTS.md` | Instructions loaded by opencode describing how this project is wired. |
 | `.env` / `.n8n-mcp-token` | Git-ignored local secrets (n8n MCP access token). Never committed. |
 | `.env.example` | Template for the local env file. |
 
-## Quick start
+## Quick start (manual, if you'd rather not use an agent)
 
 n8n runs in **Docker**, MCP is enabled out of the box, and the agent
 authenticates with the n8n MCP server through a header token.
@@ -33,10 +67,9 @@ docker compose up -d
 # 4. Launch opencode from a shell in this directory
 ```
 
-> **Want the full walkthrough, including troubleshooting and the exact token
-> file format?** Read [`setup.md`](setup.md). It's written to be handed to a
-> coding agent so the whole environment can be reproduced on a different
-> machine in one pass.
+> **Prefer the guided path?** See the [Get started (first run)](#get-started-first-run)
+> section above, or read [`setup.md`](setup.md) for the full walkthrough with
+> troubleshooting and the exact token file format.
 
 ## How auth works (in short)
 
@@ -76,4 +109,6 @@ project. See `n8n-skills/LICENSE` for the license terms.
   committed. They live in the git-ignored `.env` / `.n8n-mcp-token`.
 - **Restart opencode** after changing `opencode.json` / the token file — MCP
   config is read once at startup.
-- Update the vendored skills with `git -C n8n-skills pull`.
+- Update the vendored skills by re-vendoring from upstream (see `setup.md`
+  Step 1) — do not run `git -C n8n-skills pull` (no nested `.git` there; it
+  resolves to this repo).

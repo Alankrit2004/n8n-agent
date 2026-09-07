@@ -22,7 +22,7 @@ Two pieces are wired together:
 2. **n8n's built-in MCP server** — lets the agent talk to your n8n instance.
 
 Everything is **project-scoped**: config lives in `opencode.json` at the repo
-root; skills are loaded from the vendored `n8n-skills/` clone. If you're on a
+root; skills are loaded from the vendored `n8n-skills/` directory. If you're on a
 non-opencode CLI, the project expected to be opened as that CLI's project.
 
 ---
@@ -45,8 +45,8 @@ Run these checks first; report anything missing to the user.
     - macOS: `brew install jq`
     - Linux: `sudo apt install jq` (or your distro's package)
 - The project's `n8n-skills/` directory exists and has `skills/`, `hooks/`, and
-  `opencode/plugin.ts`. If not, restore it (e.g. `git clone
-  https://github.com/n8n-io/skills.git n8n-skills` or re-download).
+  `opencode/plugin.ts`. It is **vendored in-tree** (committed directly, no
+  nested `.git`). If it's missing/corrupt, restore it from git (Step 1).
 
 ---
 
@@ -110,7 +110,7 @@ Never write to global config scopes:
 - ❌ `~/.codex/config.toml` (global)
 - ✅ `./opencode.json` (project)
 - ✅ `./docker-compose.yml` (n8n container config — project)
-- ✅ `./n8n-skills/` (vendored repo clone — project)
+- ✅ `./n8n-skills/` (vendored in-tree directory — project)
 - ✅ `./.n8n-mcp-token` (git-ignored token file — project only)
 - ✅ `./.env` (git-ignored local token file — project only)
 
@@ -126,14 +126,33 @@ belongs at the system level, not in the project.
 
 ### Step 1 — Verify/restore `n8n-skills/` (the skills + plugin source)
 
-The repo should already contain a `n8n-skills/` clone. If it's missing or empty:
+The `n8n-skills/` directory is **vendored in-tree**: its files are committed
+directly into this repo (deliberately **not** a nested `git` clone — a nested
+`.git` would silently break the update flow below). It should already be present
+from the checkout. If it's missing or corrupt, restore it from this repo:
 
 ```bash
-git clone https://github.com/n8n-io/skills.git n8n-skills
-# or shallow: git clone --depth 1 https://github.com/n8n-io/skills.git n8n-skills
+git checkout -- n8n-skills
 ```
 
-Update it later: `git -C n8n-skills pull`.
+**Updating the vendored skills later:** they're a snapshot, so updates are a
+re-vendor, not a pull. Fetch a fresh copy and swap it in:
+
+```bash
+# fetch upstream fresh
+git clone --depth 1 https://github.com/n8n-io/skills.git /tmp/n8n-skills-upstream
+# swap it in, dropping any nested .git the clone brought
+rm -rf n8n-skills
+cp -r /tmp/n8n-skills-upstream n8n-skills
+rm -rf n8n-skills/.git
+# review changes and commit
+git add n8n-skills
+git commit -m "Update vendored n8n skills"
+```
+
+> PowerShell equivalents: `Copy-Item -Recurse /tmp/... ` works the same; the
+> `rm -rf n8n-skills/.git` step is what keeps it a plain vendored directory
+> instead of a nested repo.
 
 ### Step 2 — Configure `opencode.json` (project-scoped)
 
@@ -268,7 +287,8 @@ After restarting the CLI agent:
    (e.g. the `using-n8n-skills-official` meta-skill is injected into the system
    prompt). If not, look for `[n8n-skills]` warnings at startup.
 3. **MCP connected** → the `n8n` server connects and n8n MCP tools are
-   available (e.g. `search_workflows`, `get_workflow`, `create_workflow`).
+   available (e.g. `search_workflows`, `get_workflow_details`,
+   `create_workflow_from_code`).
 4. **Hooks fire** → run any n8n MCP tool and confirm post-tool reminders
    appear. If they don't, check `jq --version` in a fresh **bash** shell
    (jq installed after the shell started won't be on PATH until restart).
@@ -300,7 +320,7 @@ Invoke-WebRequest -Uri "http://localhost:5678/mcp-server/http" -Headers $h -UseB
 
 | Symptom | Cause / fix |
 | --- | --- |
-| `[n8n-skills] hooks/ or skills/ not found` warning | `n8n-skills/` missing/moved. Re-clone it (Step 1). |
+| `[n8n-skills] hooks/ or skills/ not found` warning | `n8n-skills/` missing/moved. Restore it from git (Step 1). |
 | No post-tool hook reminders | `jq` missing from **git bash** PATH, or MCP server not named `n8n`. Install jq (Q0/prereqs) and confirm `bash -lc "jq --version"`; verify the server name in `opencode.json`. |
 | MCP won't connect / `SSE error: Non-200 status code (401)` | Run the Step 6 pre-flight to split symptoms. 401 means the token is missing/wrong/corrupt (BOM, newline, quoting) or MCP isn't enabled (re-check Step 4). If you used `{env:N8N_MCP_TOKEN}` instead of `{file:…}`, an unset var substitutes as **empty** → 401 (opencode doesn't auto-load `.env`). |
 | MCP shows "needs auth" even though headers are set / `opencode mcp auth n8n` was run | You mixed OAuth with the header token. n8n uses an API-key header, **not** OAuth. Make sure `"oauth": false` is in `opencode.json`, then **clear the stale OAuth credentials** opencode stored globally: delete `~/.local/share/opencode/mcp-auth.json` (or any `n8n` entry in it), then restart opencode. |
@@ -315,7 +335,10 @@ Invoke-WebRequest -Uri "http://localhost:5678/mcp-server/http" -Headers $h -UseB
 
 ## Updating
 
-Skills / plugin / hooks: `git -C n8n-skills pull`, then **restart the CLI agent**.
+Skills / plugin / hooks are **vendored in-tree**, so there's no `git -C
+n8n-skills pull` (that would resolve to this repo's own `.git` since the
+subdir has none). To update: re-vendor from upstream (Step 1), then **restart
+the CLI agent**.
 
 ---
 
@@ -333,8 +356,8 @@ Skills / plugin / hooks: `git -C n8n-skills pull`, then **restart the CLI agent*
 - **`N8N_ENCRYPTION_KEY`** (Docker) encrypts stored credentials in n8n. Set a
   long random value in `.env`; keep it stable — losing it makes stored
   credentials unrecoverable. Don't commit the real value.
-- Keep the vendored `n8n-skills/` clone's authentication code untouched unless
-  you know what you're doing.
+- Keep the vendored `n8n-skills/` code untouched unless you know what you're
+  doing.
 
 ## Docker commands
 

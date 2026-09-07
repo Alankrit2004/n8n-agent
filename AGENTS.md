@@ -20,16 +20,18 @@ the repo root.
 
 ## Skills (via the n8n-skills plugin)
 
-The n8n skills come from the **official n8n-io/skills** repo, vendored as a
-project-local clone at `<project>/n8n-skills/`. `opencode.json` loads its
-plugin (`"plugin": ["./n8n-skills/opencode/plugin.ts"]`), which:
+The n8n skills come from the **official n8n-io/skills** repo, **vendored in-tree**
+at `<project>/n8n-skills/` (committed directly, no nested `.git`). `opencode.json`
+loads its plugin (`"plugin": ["./n8n-skills/opencode/plugin.ts"]`), which:
 
 - auto-registers all 14 skills from `n8n-skills/skills/` (13 capability skills +
   the `using-n8n-skills-official` meta-skill) — no manual `skills.paths`.
 - injects `using-n8n-skills-official` into the system prompt every session.
 - fires bash hooks after n8n MCP tool calls (requires `bash` + `jq` on PATH).
 
-Update the skills by pulling the clone: `git -C n8n-skills pull`. When working
+Update the vendored skills by re-vendoring from upstream (see setup.md Step 1),
+then **restart opencode** — do **not** run `git -C n8n-skills pull` (it resolves
+to this repo's `.git`, not the skills upstream). When working
 on workflows/nodes/expressions, load `using-n8n-skills-official` first and
 follow its routing into the matching capability skill. Follow the skills'
 build best practices (validate nodes → build → validate workflow → deploy).
