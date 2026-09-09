@@ -101,6 +101,64 @@ Prompt only when the tool is actually present — never offer an MCP install
 for a service the user doesn't have. Applies to any external service a
 workflow references (databases, Slack, Gmail, etc.).
 
+### V3 AI Agent + `usableAsTool` nodes: use a sub-workflow tool, not the raw node
+
+Verified on n8n 2.37.10 (2026-09): when an **AI Agent** (LangChain Agent v3.1)
+registers a plain `usableAsTool` base node (e.g. `n8n-nodes-base.microsoftSql`)
+as its tool, the agent's engine executes it through the
+`ExecutionNodeAction` path and the tool **runs with correct inputs but returns an
+empty `ai_tool` output** (`[[]]`) — the model sees `Tool: ""` and answers with no
+data (e.g. "0 tickets"). The V1/V2 inline path (`makeHandleToolInvocation` +
+`addInputData`) is fine; only the V3 engine path is broken for raw `usableAsTool`
+nodes with no `supplyData`/`ai_tool` output. The GitHub #26202 FIFO fix is
+present in this version and does NOT resolve it.
+
+**Workaround (implemented in the CLN Database Reporter):** expose the base node
+through a **sub-workflow-as-tool** instead:
+1. Build a small sub-workflow: `Execute Workflow Trigger` (Define Below,
+   `workflowInputs.values`) → the base node (expression reads `{{ $json.<input> }}`,
+   credential bound, `onError: continueErrorOutput`) → optional `Stop and Error`
+   on the error output. Tag it `subworkflow,tool,<domain>`.
+2. **Publish it** — `toolWorkflow` refuses inactive targets ("Workflow is not
+   active and cannot be executed.").
+3. In the agent workflow, wire a `@n8n/n8n-nodes-langchain.toolWorkflow` v2.2
+   node (`source: "database"`, `workflowId` RLC → sub-workflow,
+   `workflowInputs` defineBelow with `$fromAI("inputName", ..., "string")`) into
+   the agent's `ai_tool` input. The DB runs in a normal main-flow context where
+   inputs exist, so results come back correctly.
+
+## Build & test speed
+
+This project overrides the official `n8n-workflow-lifecycle-official` default
+("verify `get_workflow_details` after every create/update") in favor of a
+**verify-once-at-the-end** loop. It's a deliberate trade: faster iteration in
+exchange for mid-build wiring bugs surfacing during validation/test instead of
+immediately after a create.
+
+- **Batch node-type lookups.** Resolve all node types a workflow needs in one
+  `get_node_types([...])` call (array of discriminators) during PLAN, then
+  reuse those definitions for the whole BUILD. Never re-fetch a node type
+  already resolved this session. In-session reuse beats re-fetching: repeat
+  calls return the same definitions and just burn time.
+- **One-shot build.** Author the full workflow in a single
+  `create_workflow_from_code` → one `validate_workflow` → one
+  `get_workflow_details` at the end → one `publish_workflow`. Avoid piecemeal
+  `update_workflow` churn.
+- **Verify connections once, at the end.** `get_workflow_details` after the
+  final build, before publish. **Exception:** after any update that rewires a
+  Merge or multi-wire fan-out (the silent-wiring traps validation misses), do a
+  quick targeted `get_workflow_details`.
+- **Truncated test inspection.** In debug/test loops, fetch executions with
+  `get_workflow_execution` using `truncateData: true` and targeted `nodeNames`.
+  Full `includeData` only for the final verification pass.
+- **Reuse pin data byte-for-byte** across `test_workflow` iterations. Never
+  regenerate pin data between runs.
+- **Sub-workflow-first testing.** Test a sub-workflow's core logic in isolation
+  before wiring the full graph, so a single bug doesn't burn whole-graph runs.
+- **Skill-load-once discipline.** Load each capability skill's `SKILL.md` once
+  per session (they're short routers); pull `references/*.md` on demand only
+  for the step that needs them. Don't re-load a skill body already in context.
+
 ## User profile & session continuity
 
 - **Reuse the same opencode session for a workflow.** A workflow's context

@@ -338,6 +338,13 @@ things smooth:
   - <date>: <workflow/task> — <preference observed>
   ```
 
+And for faster build/test iteration, the agent follows speed rules in
+`AGENTS.md` ("Build & test speed"): it batches node-type lookups, builds
+one-shot, verifies workflow connections once at the end (not after every
+update), inspects test executions truncated, and reuses pin data between test
+runs. The one deliberate trade is a per-update `get_workflow_details` becoming
+a final check — wiring bugs surface at validate/test rather than mid-build.
+
 ---
 
 ## Troubleshooting

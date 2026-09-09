@@ -116,6 +116,9 @@ project. See `n8n-skills/LICENSE` for the license terms.
   committed. They live in the git-ignored `.env` / `.n8n-mcp-token`.
 - **Restart opencode** after changing `opencode.json` / the token file — MCP
   config is read once at startup.
+- **Build/test speed** is tuned for fast iteration: batched node-type lookups,
+  one-shot builds, and verify-once-at-the-end (`AGENTS.md` "Build & test
+  speed") instead of the official skill's verify-after-every-update default.
 - Update the vendored skills by re-vendoring from upstream (see `setup.md`
   Step 1) — do not run `git -C n8n-skills pull` (no nested `.git` there; it
   resolves to this repo).
